@@ -1,0 +1,42 @@
+---
+title: "Test"
+format: html
+---
+
+```{r}
+# 1. Install gert if you don't have it
+if (!requireNamespace("gert", quietly = TRUE)) install.packages("gert")
+
+# 2. Pull the changes from GitHub to fix the non-fast-forward rejection
+gert::git_pull(remote = "origin")
+
+# 3. Push your committed Quarto document up to GitHub
+gert::git_push(remote = "origin")
+```
+
+```{r}
+# 1. Install usethis if you don't have it already
+if (!requireNamespace("usethis", quietly = TRUE)) install.packages("usethis")
+
+# 2. Configure your Git identity globally
+usethis::use_git_config(
+  user.name = "daltonkeeley-oss", 
+  user.email = "daltonkeeley@gmail.com"
+)
+```
+
+```{r}
+# Pull the blocking changes from GitHub
+gert::git_pull(remote = "origin")
+
+# Push your Quarto document to your repository
+gert::git_push(remote = "origin")
+```
+
+```{r}
+gert::git_status()
+```
+
+```{r}
+gert::git_add(c("README.md", "SOCI 502"))  # Or replace with the exact file names printed by git_status()
+```
