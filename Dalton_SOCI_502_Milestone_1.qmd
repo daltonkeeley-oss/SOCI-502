@@ -1,0 +1,14 @@
+---
+title: "Milestone 1 Test"
+author: Keeley Dalton
+date: today
+format: pdf
+---
+
+```{r}
+alienchildren_data <- read.csv("export.csv")
+
+alienchildren_data
+```
+
+
