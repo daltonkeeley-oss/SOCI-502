@@ -40,3 +40,28 @@ gert::git_status()
 ```{r}
 gert::git_add(c("README.md", "SOCI 502"))  # Or replace with the exact file names printed by git_status()
 ```
+
+```{r}
+gert::git_log(max = 3)
+```
+
+```{r}
+gert::git_push(
+  remote = "origin", 
+  refspec = "refs/heads/main:refs/heads/main", 
+  force = TRUE
+)
+```
+
+
+```{r}
+gert::git_rm("SOCI 502")
+```
+```{r}
+# If the file is loose in your project directory:
+gert::git_add("Testing Git.qmd") 
+```
+```{r}
+gert::git_commit("Add actual Quarto document files")
+gert::git_push(remote = "origin")
+```

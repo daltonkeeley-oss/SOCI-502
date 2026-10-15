@@ -1,0 +1,38 @@
+---
+title: "Dalton_October_13_SOCI_502_Practice"
+format: pdf
+execute: 
+  echo: true # Includes all source code in output 
+  output: true # Includes text results and figures
+  warning: false # Suppresses code warnings
+  message: false # Suppresses code messages
+---
+```{r}
+library(tidyverse)
+library(httr)
+library(xml2)
+```
+
+```{r}
+psychology = "psychology"
+arxiv <- GET("http://export.arxiv.org/api/query?search_query=all:'psychology'")
+
+status_code(arxiv)
+```
+
+```{r}
+xml_data <- read_xml(arxiv)
+xml_ns_strip(xml_data)
+titles <- xml_text(xml_find_all(xml_data, ".//title"))
+titles
+```
+```{r}
+dates <- xml_text(xml_find_all(xml_data, ".//published"))
+dates
+```
+```{r}
+df <- data.frame(titles = titles[-1], dates = dates)
+df
+```
+
+
