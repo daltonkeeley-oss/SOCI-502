@@ -6,33 +6,218 @@ format: pdf
 ---
 
 ```{r}
-alienchildren_data <- read.csv("export.csv")
-
-alienchildren_data
-```
-```{r}
-unitedstatesmilitary_data <- read.csv("military.csv")
-
-unitedstatesmilitary_data
-```
-
-```{r}
-install.packages("canpumf")
-library(canpumf)
+# install.packages("readxl")
+library(readxl)
 library(dplyr)
-```
-```{r}
-# Example: Loading GSS Caregiving or Social Identity cycle
-gss_data <- get_pumf("GSS", version = "Cycle 32 (2018)")
-
-# Apply human-readable labels to columns
-gss_labeled <- label_pumf_columns(gss_data)
-```
-```{r}
-gss_data
-```
-```{r}
-
+library(purrr)
 ```
 
+```{r}
+harbour_data_basic <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Data (basic)")
+```
+
+
+```{r}
+harbour_data_gender <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q3 Data")
+```
+
+```{r}
+harbour_data_race <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q4 Data")
+```
+
+```{r}
+harbour_data_motivations <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q19 Data")
+```
+
+```{r}
+harbour_data_transportation <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q21 Data")
+```
+
+```{r}
+harbour_data_drugsinjected <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q22b Data")
+```
+
+```{r}
+harbour_data_inhaled7days <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q29 Data")
+```
+
+```{r}
+harbour_data_druglifetime <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q35 Data")
+```
+
+```{r}
+harbour_data_harbourhelped <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q54 Data")
+```
+
+```{r}
+harbour_data_improve <- read_excel("SUS_Harbour_DATA_Template.xlsx", sheet = "Q56 Data")
+```
+
+```{r}
+harbour_data_basic
+```
+
+```{r}
+harbourtemp1 = merge(harbour_data_basic, harbour_data_gender)
+```
+
+```{r}
+harbourtemp1
+```
+
+```{r}
+harbourtemp2 = merge(harbourtemp1, harbour_data_race)
+harbourtemp3 = merge(harbourtemp2, harbour_data_transportation)
+harbourtemp4 = merge(harbourtemp3, harbour_data_motivations)
+harbourtemp5 = merge(harbourtemp4, harbour_data_drugsinjected)
+harbourtemp6 = merge(harbourtemp5, harbour_data_inhaled7days)
+harbourtemp7 = merge(harbourtemp6, harbour_data_druglifetime)
+harbourtemp8 = merge(harbourtemp7, harbour_data_harbourhelped)
+harbourtemp9 = merge(harbourtemp8, harbour_data_improve)
+
+# 1. Assign the old dataset to the new name
+harbourdatafinalmerged <- harbourtemp9
+```
+
+```{r}
+harbourdatafinalmerged
+```
+```{r}
+my_df <- as.data.frame(harbourdatafinalmerged)
+```
+
+```{r}
+my_df <- my_df |> rename(
+  Come_to_Inject = Inject,
+  Come_to_Smoke = "Smoke / Inhale",
+  Come_to_Get_Substances = "Get Subs.",
+  Come_to_Drug_Check = "Drug Check",
+  Come_to_See_Friends = "See Friends",
+  Come_to_See_Staff = "See Staff",
+  Come_for_OD_Prevention = "OD Prevent.",
+  Come_for_Clean_Supplies = "Clean Suppl.", 
+  Come_for_Safety = "Phys. Safe.", 
+  Come_for_Privacy = Privacy,
+  Come_for_WarmthShelter = "Warmth/Shelter",
+  Come_to_Charge_Phone = "Charge Phone",
+  Come_to_Bathroom = Bathroom,
+  Come_for_Counselling = Councelling,
+  Come_for_Dealers = "Access Deal.",
+  Come_for_Street_Nurse = "Street Nurse",
+  Come_for_Other_Services = "Have Access"
+)
+```
+
+```{r}
+head(harbourdatafinalmerged)
+```
+
+```{r}
+df_sorted <- my_df |>
+  arrange(PARTICIPANT)
+```
+
+```{r}
+head(df_sorted)
+```
+
+```{r}
+file_list <- list(harbour_data_basic, harbour_data_gender, harbour_data_race, harbour_data_transportation, harbour_data_motivations, harbour_data_drugsinjected, harbour_data_inhaled7days, harbour_data_druglifetime, harbour_data_harbourhelped, harbour_data_improve)
+
+merged_data <- file_list |>
+  reduce(full_join, by = "PARTICIPANT")
+```
+
+```{r}
+merged_data
+```
+
+```{r}
+harbourdatafinalmerged1 <- merged_data
+harbourdatafinal <- harbourdatafinalmerged1
+rm(harbourdatafinalmerged1)
+
+harbourdatafinal
+```
+
+```{r}
+harbourdatafinal |> rename(
+  Come_to_Inject = Inject,
+  Come_to_Smoke = "Smoke / Inhale",
+  Come_to_GetSubstances = "Get Subs.",
+  Come_to_DrugCheck = "Drug Check",
+  Come_to_SeeFriends = "See Friends",
+  Come_to_SeeStaff = "See Staff",
+  Come_for_ODPrevention = "OD Prevent.",
+  Come_for_CleanSupplies = "Clean Suppl.", 
+  Come_for_Safety = "Phys. Safe.", 
+  Come_for_Privacy = Privacy,
+  Come_for_WarmthShelter = "Warmth/Shelter",
+  Come_to_ChargePhone = "Charge Phone",
+  Come_to_Bathroom = Bathroom,
+  Come_for_Counselling = Councelling,
+  Come_for_Dealers = "Access Deal.",
+  Come_for_Street_Nurse = "Street Nurse",
+  Come_for_Other_Services = "Have Access",
+  Walk_to_Harbour = Walking,
+  Transit_to_Harbour = "Public Transit",
+  Bike_to_Harbour = Bicycle,
+  Electric_BikeScooter_to_Harbour = "E-scooter / e-bike", 
+  Drive_to_Harbour = "Personal Vehic.",
+  Ridesharetaxi_to_Harbour = "Rideshare / taxi",
+  Have_injected_FentCarfent = "Fentanyl/Carfentanyl",
+  Have_injected_CrystalMeth = "Crystal Meth.x",
+  Have_injected_CrackCocaine = "Crack Cocaine.x",
+  Have_injected_Benzos = "Benzodiazepines.x", 
+  Have_injected_DilaudidHydromorph = "Dilaud. / Hydromorph.",
+  Have_injected_Heroin = "Heroin.x",
+  Have_injected_Methadone = "Methadone.x",
+  Have_injected_Oxy = "Oxy..x",
+  Have_injected_PrescriptionOpioids = "Prescrip. Opioids",
+  Have_injected_Amphetamines = "Amphetamines.x",
+  Smoked_7days_FentCarfent = "Fent./Carfent..x",
+  Smoked_7days_CrystalMeth = "Crystal Meth.y",
+  Smoked_7days_CrackCocaine = "Crack Cocaine.y",
+  Smoked_7days_Benzos = "Benzodiazepines.y",
+  Smoked_7days_DilaudidHydromorph = "Dilaud. / Hydromorp..x",
+  Smoked_7days_Heroin = "Heroin.y",
+  Smoked_7days_Methadone = "Methadone.y",
+  Smoked_7days_Oxy = "Oxy..y",
+  Smoked_7days_PrescriptionOpioids = "Prescription Opioids.x",
+  Smoked_7days_Amphetamines = "Amphetamines.y",
+  Smoked_7days_Mixedtwoplus = "Mixed two or more",
+  Lifetime_FentCarfent = "Fent./Carfent..y", 
+  Lifetime_CrystalMeth = "Crystal Meth",
+  Lifetime_Cocaine = "Cocaine",
+  Lifetime_Benzos = "Benzodiazepines",
+  Lifetime_DialaudidHydromorph = "Dilaud. / Hydromorp..y", 
+  Lifetime_Heroin = "Heroin",
+  Lifetime_Methadone = "Methadone",
+  Lifetime_Oxy = "Oxy.",
+  Lifetime_PrescriptionOpioids = "Prescription Opioids.y", 
+  Lifetime_Amphetamines = "Amphetamines",
+  Lifetime_Cannabis = "Cannabis",
+  Lifetime_SleepingPills = "Sleeping Pills",
+  Lifetime_NonBevAlcohol = "Non Bev. Alcohol", 
+  HarbourHelp_OD_Less = "Overdosing less often",
+  HarbourHelp_SmokeUnsafeAreas = "Avoiding smoking in unsafe public areas",
+  HarbourHelp_ReplaceInject_with_Smoke = "Replacing injecting with smoking",
+  HarbourHelp_AccessHealthcare = "Being more likely to access healthcare or support",
+  HarbourHelp_UseSaferSterile = "Using in safer or more sterile ways",
+  HarbourHelp_NoChange = "No change",
+  HarbourImprove_StaffCompetency = "Staff competency",
+  HarbourImprove_MoreBathrooms = "More bathrooms",
+  HarbourImprove_DrugTesting = "Drug testing services",
+  HarbourImprove_SmokingFacilities = "Smoking facilities",
+  HarbourImprove_Hours = "Hours of operation",
+  HarbourImprove_Privacy = "Privacy in consumption areas",
+  HarbourImprove_CheckIn = "Check-in process",
+  HarbourImprove_ConnectTreatmentServices = "Help connecting with treatment or recovery services"
+) |> 
+ select(-any_of(c(
+    "BLANK...5", "BLANK...18", "...20", "...9", 
+    "Other.y.y.y", "Other.x.x.x.x", "Other.x.x.x", 
+    "Oxy..y", "Oxy..x", "...12", "Prefer not to answer.y", "Other.y.y.y.y"
+  )))
+```
 
