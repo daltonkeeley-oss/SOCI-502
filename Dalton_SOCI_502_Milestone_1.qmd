@@ -221,3 +221,7 @@ harbourdatafinal |> rename(
   )))
 ```
 
+```{r}
+git pull origin main --rebase
+```
+
