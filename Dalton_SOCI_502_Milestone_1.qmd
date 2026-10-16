@@ -10,5 +10,29 @@ alienchildren_data <- read.csv("export.csv")
 
 alienchildren_data
 ```
+```{r}
+unitedstatesmilitary_data <- read.csv("military.csv")
+
+unitedstatesmilitary_data
+```
+
+```{r}
+install.packages("canpumf")
+library(canpumf)
+library(dplyr)
+```
+```{r}
+# Example: Loading GSS Caregiving or Social Identity cycle
+gss_data <- get_pumf("GSS", version = "Cycle 32 (2018)")
+
+# Apply human-readable labels to columns
+gss_labeled <- label_pumf_columns(gss_data)
+```
+```{r}
+gss_data
+```
+```{r}
+
+```
 
 
