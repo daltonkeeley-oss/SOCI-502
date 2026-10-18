@@ -1,0 +1,16 @@
+---
+title: "Milestone 1: Social Returns of The Harbour, Victoria B.C.'s Supervised Consumption Site"
+author: Keeley Dalton
+date: today
+abstract: Victoria B.C.'s safe consumption site, The Harbour, is located on the city's infamous 900-block of Pandora Avenue. Operated by Island Health and SOLID Outreach, the facility is home to North America's first indoor group inhalation site and allows injection as well. The dataset used in this paper was collected as a part of a study funded by the British Columbia Ministry of Health and led by Dr. Michael Ma of the University of Victoria. This paper features simulated data for a select number of the dataset's response categories which have been selected to answer this paper's research question.
+format: pdf
+---
+
+# Introduction: Description of Dataset and Research Question
+
+As a student researcher on a Ministry of Health funded project led by Dr. Michael Ma (UVic) for over a year, I chose to use the survey data we collected as a part of this mixed methods study and further analyze it using R for my SOCI 502 Data Story project. Members (users) of The Harbour are housed or unhoused, use various types of drugs, range in age, race and gender, spend varying amounts of time at the site and for various purposes. The question I am asking is as follows: How is the time members spend at The Harbour associated with participation in non-consumption activities, and does this association vary with travel time to the site and drug use patterns?
+
+  To answer the research question, descriptive statistics and graphs will be used to determine whether the mean and median time spent differs for those respondents who partake in non-consumption activity (in addition to or in the absence of consumption activity) at The Harbour compared to those who only visit the site to consume illicit substances. To address the second part of the question, these differences will be tested against those whose travel time to the site is short, medium or long. While it is difficult to estimate without the use of probability tests, a difference of 
+
+## Loading Packages and Setting Up the Workspace
+
