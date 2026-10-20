@@ -4,6 +4,9 @@ author: Keeley Dalton
 date: today
 abstract: Victoria B.C.'s safe consumption site, The Harbour, is located on the city's infamous 900-block of Pandora Avenue. Operated by Island Health and SOLID Outreach, the facility is home to North America's first indoor group inhalation site and allows injection as well. The dataset used in this paper was collected as a part of a study funded by the British Columbia Ministry of Health and led by Dr. Michael Ma of the University of Victoria. This paper features simulated data for a select number of the dataset's response categories which have been selected to answer this paper's research question.
 format: pdf
+bibliography: bibliography.bib
+nocite: |
+  @*
 ---
 
 # Introduction: Description of Dataset and Research Question
@@ -75,4 +78,7 @@ simulated_Harbour_data <- tibble(
 simulated_Harbour_data
 
 ```
+
+# References
+
 
