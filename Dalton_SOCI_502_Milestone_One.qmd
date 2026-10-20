@@ -17,37 +17,62 @@ In order to simulate the data, the packages "tidyverse" and "janitor" need to be
 ```{r, message=FALSE}
 library(tidyverse)
 library(janitor)
+library(extraDistr)
 ```
 
 # Simulating Variables 
 In order to answer the above question, I have chosen to use various response categories/survey questions from the dataset. The most important ones are "TIME_AT_HARB", "TIME_TO_HARB", "Come_to_Inject", "Come_to_Smoke," "Come_to_GetSubstances", "Come_to_DrugCheck", "Come_to_SeeFriends", "Come_to_SeeStaff", "Come_for_OD_Prevention", "Come_for_CleanSupplies", "Come_for_Safety", "Come_for_Privacy", "Come_for_WarmthShelter", "Come_to_ChargePhone", "Come_to_Bathroom", "Come_for_Counselling", "Come_for_Dealers", "Come_for_Street_Nurse", "Come_for_Other_Services". 
 
   The "TIME_AT_HARB" variable used response categories ranging from 1-8, for "TIME_TO_HARB", responses varied (save some outliers) from 0-60 minutes, and each response to "Why do you come to The Harbour?" are in binary (1 = reason for coming, 0 = not a reason). These measures are taken into account when simulating the variables below. I have chosen to leave the outliers out of the data simulation as it's purpose is to ensure the code works rather than provide accurate data. 
-  
+
+
 ```{r}
+library(dplyr)
+
 set.seed(1836)
-n <- 212
+n_records <- 212
 
-simulated_Harbour_data <- 
-  tibble(
-    # Using 212 to represent the 212 survey respondents. 
-    "Participant" = 1:212,
-    # Using sample to randomly pick an option between 1 and 8 212 times with 
-    # replacement. 
-    "TIME_AT_HARB" = sample(
-      x = c(1:8),
-      size = 212, 
-      replace = TRUE),
-    
-    # Using the same practice to randomly pick an option between one and 60 
-    # 212 times with replacement.
-    "TIME_TO_HARB"= sample(
-    x = c(1:60),
-    size = 212,
-    replace = TRUE
-    )
-  )
+# Defining the 17 binary variable names.
+var_names <- c(
+  "Come_to_Inject", "Come_to_Smoke", "Come_to_GetSubstances", "Come_to_DrugCheck", 
+  "Come_to_SeeFriends", "Come_to_SeeStaff", "Come_for_OD_Prevention", "Come_for_CleanSupplies", 
+  "Come_for_Safety", "Come_for_Privacy", "Come_for_WarmthShelter", "Come_to_ChargePhone", 
+  "Come_to_Bathroom", "Come_for_Counselling", "Come_for_Dealers", "Come_for_Street_Nurse", 
+  "Come_for_Other_Services"
+)
 
+# Defining probabilities for each variable (all set to 0.50).
+probabilities <- rep(0.50, length(var_names))
+
+# Simulating the matrix for the binary variables.
+sim_matrix <- matrix(
+  rbinom(n_records * length(var_names), size = 1, prob = probabilities),
+  nrow = n_records, 
+  ncol = length(var_names), 
+  byrow = TRUE
+)
+
+# Converting to a data frame and adding column names.
+visit_data <- as.data.frame(sim_matrix)
+colnames(visit_data) <- var_names
+
+
+# Now, adding the other two variables and adding the matrix to them in a tibble.
+simulated_Harbour_data <- tibble(
+  "Participant" = 1:n_records,
+  "TIME_AT_HARB" = sample(
+    x = c(1:8), 
+    size = n_records, 
+    replace = TRUE),
+  "TIME_TO_HARB" = sample(
+    x = c(0:60), 
+    size = n_records, 
+    replace = TRUE)
+) |>
+  bind_cols(visit_data) # This attaches all 17 binary columns at once.
+
+# Viewing the resulting simulated data frame.
 simulated_Harbour_data
+
 ```
 
