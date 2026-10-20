@@ -1,0 +1,100 @@
+---
+title: "October 20 Practice: Bang!"
+author: Keeley Dalton 
+date: today
+format: pdf
+header-includes:
+  - \usepackage{float}
+  - \floatplacement{table}{H}
+---
+## Setting up workspace.  
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyverse)
+library(tinytable)
+```
+## The first step to obtaining and looking into Upworthy's A/B testing data, which they use to optimize the content on their website, is to read the csv file into R.
+```{r}
+upworthy <- read_csv("https://osf.io/vy8mj/download")
+```
+## Now that this data is read in, I can pull out the names. 
+```{r}
+upworthy |>
+  names()
+```
+## Then, I can pull out the top six results from the data. 
+```{r}
+upworthy |>
+  head()
+```
+## I am following Alexander in the textbook, but using a different selection criteria ("!" instead of "?") so I am choosing the columns "created_at," "clickability_test_id," "headline," "impressions," and "clicks." The following code chunk makes a new data frame for this restricted data and pulls those columns out and then uses head to show the top six responses to this data. 
+```{r}
+upworthy_restricted <-
+  upworthy |>
+  select(
+    created_at, clickability_test_id, headline, impressions, clicks
+    )
+
+head(upworthy_restricted)
+```
+
+## Here is where my code differs from the textbook. Instead of using "asks_questions," I am using "uses_bang." We're looking at the text in headlines, and specifically those headlines that used "!" This chunk is telling R to bring up the data for those headlines that used a "!" and used the same image, in order to remove the effect of the image differences themselves. 
+```{r}
+upworthy_restricted <-
+  upworthy_restricted |>
+  mutate(
+    uses_bang =
+      str_detect(string = headline, pattern = "\\!")
+    )
+
+upworthy_restricted |>
+  count(uses_bang)
+```
+## Now, for each text with "!" and each picture, I want to see whether the bang has an effect on the number of clicks. 
+```{r}
+uses_bang_or_not <-
+  upworthy_restricted |>
+  summarise(
+    ave_clicks = mean(clicks),
+    .by = c(clickability_test_id, uses_bang)
+  ) 
+
+uses_bang_or_not |>
+  pivot_wider(names_from = uses_bang,
+              values_from = ave_clicks,
+              names_prefix = "ave_clicks_") |>
+  drop_na(ave_clicks_FALSE, ave_clicks_TRUE) |>
+  mutate(difference_in_clicks = ave_clicks_TRUE - ave_clicks_FALSE) |> 
+  summarise(average_differce = mean(difference_in_clicks))
+```
+
+## This code will provide a cross tab showing the difference between the average number of click between bang and no bang. 
+```{r}
+uses_bang_or_not |> 
+  summarise(mean = mean(ave_clicks),
+            .by = uses_bang) |> 
+  tt() |> 
+  style_tt(j = 1:2, align = "lr") |> 
+  format_tt(digits = 0, num_fmt = "decimal") |> 
+  setNames(c("UsesABang!", "MeanClicks"))
+```
+
+## This is my histogram. 
+```{r}
+uses_bang_or_not |>
+  ggplot(aes(x = ave_clicks, fill = factor(uses_bang))) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  scale_fill_manual(values = c("deeppink", "mediumspringgreen")) +
+  theme_minimal() +
+  labs(
+    x = "Average clicks",
+    y = "Count",
+    fill = "Uses a bang",
+    caption = "Data source: Upworthy."
+  )
+```
+
+## Yay! The end. 
+
