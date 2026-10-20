@@ -4,6 +4,9 @@ author: Keeley Dalton
 date: today
 abstract: Victoria B.C.'s safe consumption site, The Harbour, is located on the city's infamous 900-block of Pandora Avenue. Operated by Island Health and SOLID Outreach, the facility is home to North America's first indoor group inhalation site and allows injection as well. The dataset used in this paper was collected as a part of a study funded by the British Columbia Ministry of Health and led by Dr. Michael Ma of the University of Victoria. This paper features simulated data for a select number of the dataset's response categories which have been selected to answer this paper's research question.
 format: pdf
+header-includes:
+  - \usepackage{float}
+  - \floatplacement{table}{H}
 bibliography: bibliography.bib
 nocite: |
   @*
@@ -21,12 +24,14 @@ In order to simulate the data, the packages "tidyverse" and "janitor" need to be
 library(tidyverse)
 library(janitor)
 library(extraDistr)
+library(dplyr)
+library(tinytable)
 ```
 
 # Simulating Variables 
-In order to answer the above question, I have chosen to use various response categories/survey questions from the dataset. The most important ones are "TIME_AT_HARB", "TIME_TO_HARB", "Come_to_Inject", "Come_to_Smoke," "Come_to_GetSubstances", "Come_to_DrugCheck", "Come_to_SeeFriends", "Come_to_SeeStaff", "Come_for_OD_Prevention", "Come_for_CleanSupplies", "Come_for_Safety", "Come_for_Privacy", "Come_for_WarmthShelter", "Come_to_ChargePhone", "Come_to_Bathroom", "Come_for_Counselling", "Come_for_Dealers", "Come_for_Street_Nurse", "Come_for_Other_Services". 
+In order to answer the above question, I have chosen to use various response categories/survey questions from the dataset. The most important ones are "TimeAtHarb", "TimeToHarb", "CometoInject", "CometoSmoke," "CometoGetSubstances", "CometoDrugCheck", "CometoSeeFriends", "CometoSeeStaff", "ComeforODPrevention", "ComeforCleanSupplies", "ComeforSafety", "ComeforPrivacy", "ComeforWarmthShelter", "CometoChargePhone", "CometoBathroom", "ComeforCounselling", "ComeforDealers", "ComeforStreetNurse", "ComeforOtherServices". 
 
-  The "TIME_AT_HARB" variable used response categories ranging from 1-8, for "TIME_TO_HARB", responses varied (save some outliers) from 0-60 minutes, and each response to "Why do you come to The Harbour?" are in binary (1 = reason for coming, 0 = not a reason). These measures are taken into account when simulating the variables below. I have chosen to leave the outliers out of the data simulation as it's purpose is to ensure the code works rather than provide accurate data. 
+  The "TimeAtHarb" variable used response categories ranging from 1-8, for "TimeToHarb", responses varied (save some outliers) from 0-60 minutes, and each response to "Why do you come to The Harbour?" are in binary (1 = reason for coming, 0 = not a reason). These measures are taken into account when simulating the variables below. I have chosen to leave the outliers out of the data simulation as it's purpose is to ensure the code works rather than provide accurate data. 
 
 
 ```{r}
@@ -37,11 +42,11 @@ n_records <- 212
 
 # Defining the 17 binary variable names.
 var_names <- c(
-  "Come_to_Inject", "Come_to_Smoke", "Come_to_GetSubstances", "Come_to_DrugCheck", 
-  "Come_to_SeeFriends", "Come_to_SeeStaff", "Come_for_OD_Prevention", "Come_for_CleanSupplies", 
-  "Come_for_Safety", "Come_for_Privacy", "Come_for_WarmthShelter", "Come_to_ChargePhone", 
-  "Come_to_Bathroom", "Come_for_Counselling", "Come_for_Dealers", "Come_for_Street_Nurse", 
-  "Come_for_Other_Services"
+  "CometoInject", "CometoSmoke", "CometoGetSubstances", "CometoDrugCheck", 
+  "CometoSeeFriends", "CometoSeeStaff", "ComeforODPrevention", "ComeforCleanSupplies", 
+  "ComeforSafety", "ComeforPrivacy", "ComeforWarmthShelter", "CometoChargePhone", 
+  "CometoBathroom", "ComeforCounselling", "ComeforDealers", "ComeforStreetNurse", 
+  "ComeforOtherServices"
 )
 
 # Defining probabilities for each variable (all set to 0.50).
@@ -63,11 +68,11 @@ colnames(visit_data) <- var_names
 # Now, adding the other two variables and adding the matrix to them in a tibble.
 simulated_Harbour_data <- tibble(
   "Participant" = 1:n_records,
-  "TIME_AT_HARB" = sample(
+  "TimeAtHarb" = sample(
     x = c(1:8), 
     size = n_records, 
     replace = TRUE),
-  "TIME_TO_HARB" = sample(
+  "TimeToHarb" = sample(
     x = c(0:60), 
     size = n_records, 
     replace = TRUE)
@@ -75,9 +80,31 @@ simulated_Harbour_data <- tibble(
   bind_cols(visit_data) # This attaches all 17 binary columns at once.
 
 # Viewing the resulting simulated data frame.
-simulated_Harbour_data
-
+#| tbl-pos: H
+simulated_Harbour_data |> 
+  head(10)
 ```
+
+```{r}
+# Now, I am making it into a table. 
+#| tbl-pos: H
+simulated_Harbour_data |>
+  select(TimeAtHarb, TimeToHarb, 4:8) |>
+  head(5) |>
+  t() |>
+  as.data.frame() |>
+  tibble::rownames_to_column("Variable") |>
+  tt() |>
+  setNames(c("Variable", paste("Participant", 1:5)))
+```
+```{r}
+# Alternatively, this gives the sums of the reason columns. 
+#| tbl-pos: H
+tibble(Reason = var_names,
+       n = colSums(simulated_Harbour_data[, var_names])) |>
+  tt()
+```
+
 
 # References
 
