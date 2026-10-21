@@ -7,7 +7,7 @@ format: pdf
 header-includes:
   - \usepackage{float}
   - \floatplacement{table}{H}
-bibliography: bibliography.bib
+bibliography: ../bibliography.bib
 nocite: |
   @*
 ---
