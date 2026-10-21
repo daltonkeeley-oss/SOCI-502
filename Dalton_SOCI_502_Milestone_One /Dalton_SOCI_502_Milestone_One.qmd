@@ -18,18 +18,6 @@ As a student researcher on a study of The Harbour, Victoria's safe consumption s
 
   The research question will be considered answered by comparing the time participants spend at the site between those who report one or more non-consumption related reasons for visiting the site and those who report only consumption related reasons. Medians and percentage distributions will be used to compare these groups, and then again using short, medium and long travel time groups. If those who report non-consumption related activities have a consistently higher median, this will be considered a positive associated between non-consumption activities and time spent at the site. The same goes for travel time: if a difference between travel groups is notably larger or smaller in relationship to time spent for non-consumption related activities than consumption related ones, travel time will be shown to cause variation. In either case, if means are similar or the same, no association will be able to be interpreted. 
 
-## Before I started on R and wrote my simulated code, I drew out my plan. 
-```{r}
-library(knitr) # I intentionally put this separate from my other setup chunk.
-
-#| echo: false
-#| fig-cap: "My Data Plan Drawing"
-#| out-width: "70%"
-#| fig-align: "center"
-
-knitr::include_graphics("SOCI-502/Dalton SOCI 502 Milestone One/Soci 502 Simulated Data Plan.png")
-```
-
 # Loading Packages and Setting Up the Workspace
 ## In order to simulate the data, the packages below need to be loaded. Given that they have previously been installed onto my machine, they now only need to be loaded. 
 ```{r, message=FALSE}
