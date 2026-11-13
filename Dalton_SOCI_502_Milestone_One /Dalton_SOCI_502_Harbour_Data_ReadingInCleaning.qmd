@@ -80,6 +80,7 @@ harbour_data_improve <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q5
 dims[["10_improve"]] <- dim(harbour_data_improve)
 dims[["10_improve"]]
 ```
+
 The following test will make sure that all sheets have the same number of rows (212 participants), and will give an error message if not.  
 ```{r}
 sheets <- list(
@@ -143,30 +144,36 @@ dims[["temp1"]] <- dim(harbourtemp1)
 dims[["temp1"]]
 ```
 
+
 Let's see how it looks. 
 ```{r}
 head(harbourtemp1)
 ```
+
 This looks correct. So, now I'm going to merge the rest, checking the count each time. 
 ```{r}
 harbourtemp2 = merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
 dims[["temp2"]] <- dim(harbourtemp2)
 dims[["temp2"]]
 ```
+
 This has the wrong number of participants(rows). I'm going to call it up to look at it. 
 ```{r}
 head(harbourtemp2)
 ```
+
 This is not right. It should have 212 rows and it's pulling a weird assortment of participants. Lets make sure they all have the same number of rows. 
 ```{r}
 nrow(harbour_data_basic)
 nrow(harbour_data_gender)
 nrow(harbourtemp1)
 ```
+
 They do, so, it must be a merging error. So, I'm running this next chunk to see what columns its merging on. 
 ```{r}
 intersect(names(harbourtemp1), names(harbour_data_race))
 ```
+
 Now I know that it's merging on Other too, which is why I'm getting weird row selections. This next chunk specifies to R that I want it only to merge on PARTICIPANT, and then checks the number of rows. 
 ```{r}
 harbourtemp2 <- merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
@@ -174,10 +181,12 @@ dims[["temp2"]] <- dim(harbourtemp2)
 dims[["temp2"]]
 nrow(harbourtemp2)
 ```
+
 Ok, now this is the right number of rows. Let's call it up once more to make sure it looks right. 
 ```{r}
 head(harbourtemp2)
 ```
+
 Okay, now carrying on. I'm going to merge each one with a dim check. 
 ```{r}
 harbourtemp3 = merge(harbourtemp2, harbour_data_transportation, by = "PARTICIPANT", all = TRUE)
@@ -208,6 +217,7 @@ dims[["temp6"]]
 nrow(harbourtemp6)
 ncol(harbourtemp6)
 ```
+
 This is the same issue, so I can use the same solution. 
 ```{r}
 harbourtemp7 = merge(harbourtemp6, harbour_data_druglifetime, by = "PARTICIPANT", all = TRUE)
@@ -225,7 +235,6 @@ dims[["temp8"]]
 nrow(harbourtemp8)
 ncol(harbourtemp8)
 ```
-
 
 ```{r}
 harbourtemp9 = merge(harbourtemp8, harbour_data_improve, by = "PARTICIPANT", all = TRUE)
@@ -347,11 +356,11 @@ names(harbourdatafinal)      # returns the column names as a character vector
 colnames(harbourdatafinal)   # same thing for data frames
 ```
 
-
 ```{r}
 dims[["final"]] <- dim(harbourdatafinal)
 dims[["final"]]
 ```
+
 ```{r}
 #| output: true
 row_counts <- sapply(dims, function(d) d[1])
@@ -444,6 +453,7 @@ library(dplyr)
 harbourdatafinal <- harbourdatafinal |>
   select(-starts_with("Blank_"))
 ```
+
 ```{r}
 harbourdatafinal
 ```
