@@ -1,0 +1,213 @@
+---
+title: "SOCI 503 Week 9 Practice: Exploratory Data Analysis"
+name: Keeley Dalton
+date: today 
+format: html
+---
+
+## Let's do some exploratory data analyses (EDA) on my Harbour data. 
+EDA is the process of exploring a dataset, coming to understand its features and structure, identify errors and outliers, understand the distribution and properties of variables and the relationships between them.
+
+### Setting up my Workspace 
+```{r}
+# install.packages("arrow")
+# install.packages("mice")
+# install.packages("modelsummary")
+# install.packages("naniar")
+```
+
+```{r}
+library(arrow)
+library(janitor)
+library(lubridate)
+library(mice)
+library(modelsummary)
+library(naniar)
+library(tidyverse)
+library(tinytable)
+library(dplyr)
+```
+
+To get a quick sense of my data, I'll run the head() and tail() functions, then a random selection. 
+
+```{r}
+harbourdatafinal |> 
+  head()
+```
+```{r}
+harbourdatafinal |>
+  tail()
+```
+```{r}
+harbourdatafinal |> 
+  slice_sample (n = 6)
+```
+The first thing that is clear to me in doing this is the number of NR ("non-response") values my dataset has. The most important thing about doing this EDA will be for me to decide how to work around those missing values. I will return to this. 
+
+Now, summary() will give the key summary statistics of my dataset. 
+```{r}
+harbourdatafinal |>
+  summary()
+```
+
+The first thing I am going to do in order to make things easier for myself (I realize I had previously been over complicating this) is to remove a bunch of the columns. 
+
+```{r}
+harbourdatafinaltrimmed <- subset(
+  harbourdatafinal,
+  select = -c(
+    Num_Housed_Vic, Denied, Low_Barrier, Visit_Harbour_With,
+    Injected, Months_Injected, Inhale, Inhaled_Last_Month,
+    Inhaled_Today, Num_Inhale, Months_Inhaled, Smoke_Same,
+    Harbour_Changed, Duration_Drugs, Overdosed, Num_OD_Exp,
+    Narcan, Num_Narcan, Treatment, Treatment_Unable,
+    Harbour_Helped, Improve, Drug_Check, Inj_Fentanyl,
+    Inj_Crystal_Meth, Inj_Crack, Inj_Benzos, Inj_Hydromorphone,
+    Inj_Heroin, Inj_Methadone, Inj_Oxy, Inj_Prescription_Opioids,
+    Inj_Amphetamines, Inh_Fentanyl, Inh_Crystal_Meth, Inh_Crack,
+    Inh_Benzos, Inh_Hydromorphone, Inh_Heroin, Inh_Methadone,
+    Inh_Oxy, Inh_Prescription_Opioids, Inh_Amphetamines, Inh_Mixed,
+    Inh_Other, Inh_Prefer_Not, Life_Fentanyl, Life_Crystal_Meth,
+    Life_Cocaine, Life_Benzos, Life_Hydromorphone, Life_Heroin,
+    Life_Methadone, Life_Oxy, Life_Prescription_Opioids, Life_Amphetamines,
+    Life_Cannabis, Life_Sleeping_Pills, Life_Non_Bev_Alcohol, Life_Other,
+    Improve_Staff, Improve_Bathrooms, Improve_Drug_Testing, Improve_Smoking_Facilities,
+    Improve_Hours, Improve_Privacy, Improve_Checkin, Improve_Treatment_Help,
+    Improve_Other
+  )
+)
+```
+
+Let's see how that looks. 
+```{r}
+harbourdatafinaltrimmed
+```
+Before I figure out what to do about the NAs, I am going to make the categorical variables and ordinal variables into factors.
+First is slept last night. 
+```{r}
+harbourdatafinaltrimmed$Sleep_Last_Night <- factor(
+  harbourdatafinaltrimmed$Sleep_Last_Night,
+  levels = c("SH", "ST", "T", "FH", "RH", "SO", "AH"),
+  labels = c(
+    "Shelter",
+    "Street",
+    "Tent",
+    "Friend's Home",
+    "Recovery House",
+    "Sobering House",
+    "Apartment/House"
+  )
+)
+
+```
+
+```{r}
+table(harbourdatafinaltrimmed$Sleep_Last_Night, useNA = "ifany")
+is.ordered(harbourdatafinaltrimmed$Sleep_Last_Night)
+```
+
+Next is frequency of visits to The Harbour. 
+```{r}
+harbourdatafinaltrimmed$Freq_Harbour <- factor(
+  harbourdatafinaltrimmed$Freq_Harbour,
+  levels = c("FRS", "OC", "OPW", "FEW", "OPD", "M"),
+  ordered = TRUE
+)
+```
+
+```{r}
+table(harbourdatafinaltrimmed$Freq_Harbour, useNA = "ifany")
+is.ordered(harbourdatafinaltrimmed$Freq_Harbour)
+```
+Next, time to Harbour is a little more difficult. 
+```{r}
+table(harbourdatafinaltrimmed$Time_To_Harbour, useNA = "ifany")
+```
+Here is a big code chunk that AI wrote for me. Let's see what it does....
+```{r}
+harbourdatafinaltrimmedtest <- harbourdatafinaltrimmed %>%
+  mutate(
+    # Step 1: Trim any hidden leading/trailing spaces
+    clean_raw = trimws(as.character(Time_To_Harbour)),
+    
+    # Step 2: Group into clean categories
+    Time_Category = case_when(
+      # Group 1: 15 minutes or less (includes 0, ranges <= 15, and "Few")
+      clean_raw %in% c(
+        "0", "no time - live on same street (0)", "0 to 15",
+        "1", "1 to 10", "1 to 15", "2", "3", "5", "5 to 10",
+        "6", "6 to 8 min", "7", "8", "10", "10 to 15 min",
+        "13", "15", "15 or less", "Few"
+      ) ~ "15 mins or less",
+      
+      # Group 2: 16 to 30 minutes (includes ranges up to 30 and midpoints around 18-30)
+      clean_raw %in% c(
+        "1 to 25 min", "18", "20", "21", "25", "30", "5 to 30"
+      ) ~ "16 to 30 mins",
+      
+      # Group 3: 31 to 60 minutes (includes ranges spanning up to 60 and "2 min or 1 hr")
+      clean_raw %in% c(
+        "10 to 60", "15 to 60", "30 to 60", "40", "45", 
+        "5 to 60", "60", "2 min or 1 hr"
+      ) ~ "31 to 60 mins",
+      
+      # Group 4: Over 60 minutes (includes >60 mins, "1 to 180", and "Hours")
+      clean_raw %in% c(
+        "65", "69", "120", "135", "1 to 180", 
+        "240 or 540 (see note)", "Hours"
+      ) ~ "Over 60 mins",
+      
+      # Group 5: Unspecified / Vague valid responses (15 rows total)
+      # Note: Set to NA_character_ instead if you want to exclude these from analysis
+      clean_raw %in% c("Minutes", "Minuites", "minuites", "Depends") ~ "~5 mins",
+      
+      # Group 6: Non-response and missing values (28 rows total)
+      clean_raw %in% c("NR", "NR (see note)") | is.na(clean_raw) ~ NA_character_,
+      
+      # Safety catch: flags anything unexpected
+      TRUE ~ "CHECK_ME"
+    ),
+    
+    # Step 3: Convert to an ordered categorical factor
+    Time_Category = factor(
+      Time_Category,
+      levels = c(
+        "15 mins or less",
+        "16 to 30 mins",
+        "31 to 60 mins",
+        "Over 60 mins",
+        "~5 mins"
+      )
+    )
+  ) %>%
+  select(-clean_raw) # Remove temporary helper column
+
+# Verify the final counts
+table(harbourdatafinaltrimmedtest$Time_Category, useNA = "ifany")
+
+```
+
+I definitely not write that code on my own but I can somewhat understand it, at least. I decided to change the minutes type to "~5 mins" because I didn't want it to be lost or "unspecified" as AI suggested. 
+
+Next, using supplies at The Harbour will be the same method as the frequency one. Lets see if I can write it myself. 
+
+The harbourdatafinaltrimmedtest (I will change this name later) accidentally ended up overriding the df. This should fix it. I had to rerun the chunk above where I named it and delete the one that broke it and then it worked. 
+```{r}
+harbourdatafinaltrimmedtest$Supplies_Harbour <- factor(
+  harbourdatafinaltrimmedtest$Supplies_Harbour,
+  levels = c("N", "S", "A"),
+  labels = c("Never", "Sometimes", "Always"),
+  ordered = TRUE
+)
+```
+
+```{r}
+table(harbourdatafinaltrimmedtest$Supplies_Harbour, useNA = "ifany")
+
+is.ordered(harbourdatafinaltrimmedtest$Supplies_Harbour)
+```
+That is all the ordered variables. 
+
+Now, I am not totally sure if there is a better way to be working with the gender, race, transportation and motivation variables other than a column per response option. For now, I'm going to move on to dealing with the NAs.  
+
+

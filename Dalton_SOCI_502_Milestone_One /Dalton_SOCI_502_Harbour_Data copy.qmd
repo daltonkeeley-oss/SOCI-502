@@ -1,0 +1,451 @@
+---
+title: "Social Returns of The Harbour, Victoria B.C.'s Supervised Consumption Site"
+author: Keeley Dalton
+date: today
+abstract: This is the process I took to read in my data.
+format: pdf
+---
+# Retrieving the Data
+
+## Loading Packages and Setting Up
+```{r}
+# install.packages("readxl")
+library(readxl)
+library(dplyr)
+library(purrr)
+```
+
+## Reading In the Excel File 
+In order to read this data into R Studio, it is first necessary to read in each sheet from the excel file where the data was originally entered following collection. To do this, each sheet containing one question's responses have to be loaded in individually. Therefore, the following ten lines of code show this. 
+```{r}
+dims <- list()
+```
+
+```{r}
+harbour_data_basic <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Data (basic)")
+dims[["1_basic"]] <- dim(harbour_data_basic)
+dims[["1_basic"]] 
+```
+
+```{r}
+harbour_data_gender <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q3 Data")
+dims[["2_gender"]] <- dim(harbour_data_gender)
+dims[["2_gender"]]
+```
+
+```{r}
+harbour_data_race <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q4 Data")
+dims[["3_race"]] <- dim(harbour_data_race)
+dims[["3_race"]]
+```
+
+```{r}
+harbour_data_motivations <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q19 Data")
+dims[["4_motivations"]] <- dim(harbour_data_motivations)
+dims[["4_motivations"]]
+```
+
+```{r}
+harbour_data_transportation <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q21 Data")
+dims[["5_transportation"]] <- dim(harbour_data_transportation)
+dims[["5_transportation"]]
+```
+
+```{r}
+harbour_data_drugsinjected <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q22b Data")
+dims[["6_drugsinjected"]] <- dim(harbour_data_drugsinjected)
+dims[["6_drugsinjected"]]
+```
+
+```{r}
+harbour_data_inhaled7days <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q29 Data")
+dims[["7_inhaled7days"]] <- dim(harbour_data_inhaled7days)
+dims[["7_inhaled7days"]]
+```
+
+```{r}
+harbour_data_druglifetime <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q35 Data")
+dims[["8_druglifetime"]] <- dim(harbour_data_druglifetime)
+dims[["8_druglifetime"]]
+```
+
+```{r}
+harbour_data_harbourhelped <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q54 Data")
+dims[["9_harbourhelped"]] <- dim(harbour_data_harbourhelped)
+dims[["9_harbourhelped"]]
+```
+
+```{r}
+harbour_data_improve <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q56 Data")
+dims[["10_improve"]] <- dim(harbour_data_improve)
+dims[["10_improve"]]
+```
+The following test will make sure that all sheets have the same number of rows (212 participants), and will give an error message if not.  
+```{r}
+sheets <- list(
+  basic = harbour_data_basic, gender = harbour_data_gender,
+  race = harbour_data_race, motivations = harbour_data_motivations,
+  transportation = harbour_data_transportation,
+  drugsinjected = harbour_data_drugsinjected,
+  inhaled7days = harbour_data_inhaled7days,
+  druglifetime = harbour_data_druglifetime,
+  harbourhelped = harbour_data_harbourhelped,
+  improve = harbour_data_improve
+)
+
+# column names (other than PARTICIPANT) that appear in more than one sheet
+all_names <- unlist(lapply(sheets, function(d) setdiff(names(d), "PARTICIPANT")))
+dup_names <- unique(all_names[duplicated(all_names)])
+dup_names
+
+# add the sheet's label to those names
+make_unique <- function(d, label) {
+  hit <- names(d) %in% dup_names
+  names(d)[hit] <- paste0(names(d)[hit], "_", label)
+  d
+}
+
+harbour_data_basic          <- make_unique(harbour_data_basic, "basic")
+harbour_data_gender         <- make_unique(harbour_data_gender, "gender")
+harbour_data_race           <- make_unique(harbour_data_race, "race")
+harbour_data_motivations    <- make_unique(harbour_data_motivations, "motivations")
+harbour_data_transportation <- make_unique(harbour_data_transportation, "transportation")
+harbour_data_drugsinjected  <- make_unique(harbour_data_drugsinjected, "drugsinjected")
+harbour_data_inhaled7days   <- make_unique(harbour_data_inhaled7days, "inhaled7days")
+harbour_data_druglifetime   <- make_unique(harbour_data_druglifetime, "druglifetime")
+harbour_data_harbourhelped  <- make_unique(harbour_data_harbourhelped, "harbourhelped")
+harbour_data_improve        <- make_unique(harbour_data_improve, "improve")
+```
+
+```{r}
+row_counts <- sapply(dims, function(d) d[1])
+
+if (length(unique(row_counts)) != 1) {
+  stop("Row counts differ: ",
+       paste(names(row_counts), row_counts, sep = "=", collapse = ", "))
+}
+```
+
+Now, I'm calling up the basic file to check that it read in correctly. 
+```{r}
+head(harbour_data_basic)
+```
+
+Now, I'm checking the gender file too. 
+```{r}
+harbour_data_gender
+```
+
+These look good. I can now combine them using the merge function. I call it temp1 as I will end up with multiple "temp" files before I merge them all together. I'm going to use the same dim test process to make sure they all have the same 212 participants (rows) includeded. 
+```{r}
+harbourtemp1 = merge(harbour_data_basic, harbour_data_gender, by = "PARTICIPANT", all = TRUE)
+dims[["temp1"]] <- dim(harbourtemp1)
+dims[["temp1"]]
+```
+
+Let's see how it looks. 
+```{r}
+head(harbourtemp1)
+```
+This looks correct. So, now I'm going to merge the rest, checking the count each time. 
+```{r}
+harbourtemp2 = merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
+dims[["temp2"]] <- dim(harbourtemp2)
+dims[["temp2"]]
+```
+This has the wrong number of participants(rows). I'm going to call it up to look at it. 
+```{r}
+head(harbourtemp2)
+```
+This is not right. It should have 212 rows and it's pulling a weird assortment of participants. Lets make sure they all have the same number of rows. 
+```{r}
+nrow(harbour_data_basic)
+nrow(harbour_data_gender)
+nrow(harbourtemp1)
+```
+They do, so, it must be a merging error. So, I'm running this next chunk to see what columns its merging on. 
+```{r}
+intersect(names(harbourtemp1), names(harbour_data_race))
+```
+Now I know that it's merging on Other too, which is why I'm getting weird row selections. This next chunk specifies to R that I want it only to merge on PARTICIPANT, and then checks the number of rows. 
+```{r}
+harbourtemp2 <- merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
+dims[["temp2"]] <- dim(harbourtemp2)
+dims[["temp2"]]
+nrow(harbourtemp2)
+```
+Ok, now this is the right number of rows. Let's call it up once more to make sure it looks right. 
+```{r}
+head(harbourtemp2)
+```
+Okay, now carrying on. I'm going to merge each one with a dim check. 
+```{r}
+harbourtemp3 = merge(harbourtemp2, harbour_data_transportation, by = "PARTICIPANT", all = TRUE)
+dims[["temp3"]] <- dim(harbourtemp3)
+dims[["temp3"]] 
+```
+ 
+```{r}
+harbourtemp4 <- merge(harbourtemp3, harbour_data_motivations, by = "PARTICIPANT", all = TRUE)
+dims[["temp4"]] <- dim(harbourtemp4)
+dims[["temp4"]]
+nrow(harbourtemp4)
+```
+
+Carrying on...
+```{r}
+harbourtemp5 = merge(harbourtemp4, harbour_data_drugsinjected, by = "PARTICIPANT", all = TRUE)
+dims[["temp5"]] <- dim(harbourtemp5)
+dims[["temp5"]]
+nrow(harbourtemp5)
+ncol(harbourtemp5)
+```
+
+```{r}
+harbourtemp6 = merge(harbourtemp5, harbour_data_inhaled7days, by = "PARTICIPANT", all = TRUE)
+dims[["temp6"]] <- dim(harbourtemp6)
+dims[["temp6"]]
+nrow(harbourtemp6)
+ncol(harbourtemp6)
+```
+This is the same issue, so I can use the same solution. 
+```{r}
+harbourtemp7 = merge(harbourtemp6, harbour_data_druglifetime, by = "PARTICIPANT", all = TRUE)
+dims[["temp7"]] <- dim(harbourtemp7)
+dims[["temp7"]]
+nrow(harbourtemp7)
+ncol(harbourtemp7)
+```
+
+
+```{r}
+harbourtemp8 = merge(harbourtemp7, harbour_data_harbourhelped, by = "PARTICIPANT", all = TRUE)
+dims[["temp8"]] <- dim(harbourtemp8)
+dims[["temp8"]]
+nrow(harbourtemp8)
+ncol(harbourtemp8)
+```
+
+
+```{r}
+harbourtemp9 = merge(harbourtemp8, harbour_data_improve, by = "PARTICIPANT", all = TRUE)
+dims[["temp9"]] <- dim(harbourtemp9)
+dims[["temp9"]]
+nrow(harbourtemp9)
+ncol(harbourtemp9)
+```
+
+```{r}
+row_counts <- sapply(dims, function(d) d[1])
+row_counts   # prints the row count for each sheet
+
+stopifnot("Row counts don't match across sheets" = length(unique(row_counts)) == 1)
+```
+
+```{r}
+# 1. Assign the old dataset to the new name
+harbourdatafinalmerged <- harbourtemp9
+```
+
+Now, I'm checking the final data file 
+```{r}
+head(harbourdatafinalmerged)
+```
+
+```{r}
+my_df <- as.data.frame(harbourdatafinalmerged)
+```
+
+```{r}
+my_df <- my_df |> rename(
+  Come_to_Inject = Inject,
+  Come_to_Smoke = "Smoke / Inhale",
+  Come_to_Get_Substances = "Get Subs.",
+  Come_to_Drug_Check = "Drug Check",
+  Come_to_See_Friends = "See Friends",
+  Come_to_See_Staff = "See Staff",
+  Come_for_OD_Prevention = "OD Prevent.",
+  Come_for_Clean_Supplies = "Clean Suppl.", 
+  Come_for_Safety = "Phys. Safe.", 
+  Come_for_Privacy = Privacy,
+  Come_for_WarmthShelter = "Warmth/Shelter",
+  Come_to_Charge_Phone = "Charge Phone",
+  Come_to_Bathroom = Bathroom,
+  Come_for_Counselling = Councelling,
+  Come_for_Dealers = "Access Deal.",
+  Come_for_Street_Nurse = "Street Nurse",
+  Come_for_Other_Services = "Have Access"
+)
+```
+
+```{r}
+head(harbourdatafinalmerged)
+```
+
+### This was merging the wrong way, not aligning participant columns. So, this next chunk is written to fix that. The reduce command is telling R to join using the PARTICIPANT column. 
+```{r}
+file_list <- list(harbour_data_basic, harbour_data_gender, harbour_data_race, harbour_data_transportation, harbour_data_motivations, harbour_data_drugsinjected, harbour_data_inhaled7days, harbour_data_druglifetime, harbour_data_harbourhelped, harbour_data_improve)
+
+merged_data <- file_list |>
+  reduce(full_join, by = "PARTICIPANT")
+```
+
+```{r}
+merged_data
+```
+
+```{r}
+harbourdatafinalmerged1 <- merged_data
+harbourdatafinal <- harbourdatafinalmerged1
+rm(harbourdatafinalmerged1)
+
+harbourdatafinal
+```
+
+Once all read in, write a test comparing first dim to dim now. If not same, stop. 
+```{r}
+harbourdatafinal |> rename(
+  Have_injected_CrystalMeth = "Crystal Meth_drugsinjected",
+  Have_injected_CrackCocaine = "Crack Cocaine_drugsinjected",
+  Have_injected_Benzos = "Benzodiazepines_drugsinjected",
+  Have_injected_Heroin = "Heroin_drugsinjected",
+  Have_injected_Methadone = "Methadone_drugsinjected",
+  Have_injected_Oxy = "Oxy._drugsinjected",
+  Have_injected_Amphetamines = "Amphetamines_drugsinjected",
+
+  Smoked_7days_FentCarfent = "Fent./Carfent._inhaled7days",
+  Smoked_7days_CrystalMeth = "Crystal Meth_inhaled7days",
+  Smoked_7days_CrackCocaine = "Crack Cocaine_inhaled7days",
+  Smoked_7days_Benzos = "Benzodiazepines_inhaled7days",
+  Smoked_7days_DilaudidHydromorph = "Dilaud. / Hydromorp._inhaled7days",
+  Smoked_7days_Heroin = "Heroin_inhaled7days",
+  Smoked_7days_Methadone = "Methadone_inhaled7days",
+  Smoked_7days_Oxy = "Oxy._inhaled7days",
+  Smoked_7days_PrescriptionOpioids = "Prescription Opioids_inhaled7days",
+  Smoked_7days_Amphetamines = "Amphetamines_inhaled7days",
+
+  Lifetime_FentCarfent = "Fent./Carfent._druglifetime",
+  Lifetime_CrystalMeth = "Crystal Meth_druglifetime",
+  Lifetime_Benzos = "Benzodiazepines_druglifetime",
+  Lifetime_DialaudidHydromorph = "Dilaud. / Hydromorp._druglifetime",
+  Lifetime_Heroin = "Heroin_druglifetime",
+  Lifetime_Methadone = "Methadone_druglifetime",
+  Lifetime_Oxy = "Oxy._druglifetime",
+  Lifetime_PrescriptionOpioids = "Prescription Opioids_druglifetime",
+  Lifetime_Amphetamines = "Amphetamines_druglifetime",
+  HarbourImprove_ConnectTreatmentServices = "Help connecting with treatment or recovery services"
+) |> 
+ select(-any_of(c(
+    "BLANK...5", "BLANK...18", "...20", "...9", 
+    "Other.y.y.y", "Other.x.x.x.x", "Other.x.x.x", 
+    "Oxy..y", "Oxy..x", "...12", "Prefer not to answer.y", "Other.y.y.y.y"
+  )))
+```
+
+```{r}
+names(harbourdatafinal)      # returns the column names as a character vector
+colnames(harbourdatafinal)   # same thing for data frames
+```
+
+
+```{r}
+dims[["final"]] <- dim(harbourdatafinal)
+dims[["final"]]
+```
+```{r}
+#| output: true
+row_counts <- sapply(dims, function(d) d[1])
+row_counts   # prints the row count for each sheet
+
+stopifnot("Row counts don't match across sheets" = length(unique(row_counts)) == 1)
+```
+
+```{r}
+new_names <- c(
+  # Demographics / housing (1-19)
+  "Participant", "Year_Of_Birth", "Sex", "Education", "Blank_5",
+  "Unhoused", "Sleep_Last_Night", "Outside", "Housed_Vic", "Num_Housed_Vic",
+  "Denied", "Low_Barrier", "Use_SC", "Freq_Harbour", "Time_Of_Day_Harbour",
+  "Time_At_Harbour", "Visit_Harbour_With", "Blank_18", "Time_To_Harbour",
+
+  # Use history / overdose / treatment (20-39)
+  "Injected", "Months_Injected", "Inhale", "Inhaled_Last_Month", "Inhaled_Today",
+  "Num_Inhale", "Months_Inhaled", "Smoke_Same", "Harbour_Changed",
+  "Supplies_Harbour", "Duration_Drugs", "Overdosed", "Num_OD_Exp", "Narcan",
+  "Num_Narcan", "Treatment", "Treatment_Unable", "Harbour_Helped", "Improve",
+  "Drug_Check",
+
+  # Gender (40-46)
+  "Trans_Woman", "Trans_Man", "Two_Spirit", "Non_Binary", "Cis_Woman",
+  "Cis_Man", "Other_Gender",
+
+  # Race / ethnicity (47-53)
+  "Race_Black", "Race_Asian_PI", "Race_White", "Race_Hispanic_Latinx",
+  "Race_Indigenous", "Race_Other", "Race_Prefer_Not",
+
+  # Transportation (54-61)
+  "Transport_Walking", "Transport_Transit", "Transport_Bicycle",
+  "Transport_EScooter_EBike", "Transport_Vehicle", "Transport_Rideshare_Taxi",
+  "Transport_Other", "Blank_9",
+
+  # Motivations for visiting (62-80)
+  "Motiv_Inject", "Motiv_Smoke_Inhale", "Motiv_Get_Substances",
+  "Motiv_Drug_Check", "Motiv_See_Friends", "Motiv_See_Staff",
+  "Motiv_OD_Prevention", "Motiv_Clean_Supplies", "Motiv_Physical_Safety",
+  "Motiv_Privacy", "Motiv_Warmth_Shelter", "Motiv_Charge_Phone",
+  "Motiv_Bathroom", "Motiv_Counselling", "Motiv_Access_Dealer",
+  "Motiv_Street_Nurse", "Motiv_Have_Access", "Motiv_Other", "Blank_20",
+
+  # Drugs injected (81-91)
+  "Inj_Fentanyl", "Inj_Crystal_Meth", "Inj_Crack", "Inj_Benzos",
+  "Inj_Hydromorphone", "Inj_Heroin", "Inj_Methadone", "Inj_Oxy",
+  "Inj_Prescription_Opioids", "Inj_Amphetamines", "Blank_12",
+
+  # Drugs inhaled, past 7 days (92-104)
+  "Inh_Fentanyl", "Inh_Crystal_Meth", "Inh_Crack", "Inh_Benzos",
+  "Inh_Hydromorphone", "Inh_Heroin", "Inh_Methadone", "Inh_Oxy",
+  "Inh_Prescription_Opioids", "Inh_Amphetamines", "Inh_Mixed", "Inh_Other",
+  "Inh_Prefer_Not",
+
+  # Drugs used, lifetime (105-118)
+  "Life_Fentanyl", "Life_Crystal_Meth", "Life_Cocaine", "Life_Benzos",
+  "Life_Hydromorphone", "Life_Heroin", "Life_Methadone", "Life_Oxy",
+  "Life_Prescription_Opioids", "Life_Amphetamines", "Life_Cannabis",
+  "Life_Sleeping_Pills", "Life_Non_Bev_Alcohol", "Life_Other",
+
+  # How the harbour helped (119-125)
+  "Helped_Overdose_Less", "Helped_Avoid_Unsafe_Smoking",
+  "Helped_Replace_Injecting", "Helped_Access_Healthcare", "Helped_Safer_Use",
+  "Helped_No_Change", "Helped_Other",
+
+  # What would improve it (126-134)
+  "Improve_Staff", "Improve_Bathrooms", "Improve_Drug_Testing",
+  "Improve_Smoking_Facilities", "Improve_Hours", "Improve_Privacy",
+  "Improve_Checkin", "Improve_Treatment_Help", "Improve_Other"
+)
+
+# Safety checks before applying
+length(new_names) == ncol(harbourdatafinal)   # should be TRUE
+anyDuplicated(new_names)                       # should be 0
+
+names(harbourdatafinal) <- new_names
+```
+
+```{r}
+# Safety checks
+length(new_names) == ncol(harbourdatafinal)   # should be TRUE
+anyDuplicated(new_names)                       # should be 0
+
+# Step 1: rename
+names(harbourdatafinal) <- new_names
+
+# Step 2: drop the blank columns
+library(dplyr)
+harbourdatafinal <- harbourdatafinal |>
+  select(-starts_with("Blank_"))
+```
+```{r}
+harbourdatafinal
+```
+
+
