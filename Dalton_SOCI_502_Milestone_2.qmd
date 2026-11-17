@@ -1,0 +1,849 @@
+---
+title: "SOCI 503 Milestone 2: CLeaning and Exploratory Data Analysis"
+name: Keeley Dalton
+date: today 
+format: pdf
+---
+
+This script includes my data cleaning, which is repetitive from Week 8 Practice, followed by my EDA. My EDA includes various exploratory functions, like head, glimpse, summary, and so on, as well as a few tests and two visualizations. Altogether this is the culmination of my weekly practices over the last few weeks. The biggest hurdle for me when using this dataset, which I have come to discover through this process, is the sheer number of NA/missing values.
+
+# Retrieving the Data
+
+## Loading Packages and Setting Up
+```{r}
+# install.packages("readxl")
+library(readxl)
+library(dplyr)
+library(purrr)
+```
+
+## Reading In the Excel File 
+In order to read this data into R Studio, it is first necessary to read in each sheet from the excel file where the data was originally entered following collection. To do this, each sheet containing one question's responses have to be loaded in individually. Therefore, the following ten lines of code show this. 
+```{r}
+dims <- list()
+```
+
+```{r}
+harbour_data_basic <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Data (basic)")
+dims[["1_basic"]] <- dim(harbour_data_basic)
+dims[["1_basic"]] 
+```
+
+```{r}
+harbour_data_gender <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q3 Data")
+dims[["2_gender"]] <- dim(harbour_data_gender)
+dims[["2_gender"]]
+```
+
+```{r}
+harbour_data_race <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q4 Data")
+dims[["3_race"]] <- dim(harbour_data_race)
+dims[["3_race"]]
+```
+
+```{r}
+harbour_data_motivations <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q19 Data")
+dims[["4_motivations"]] <- dim(harbour_data_motivations)
+dims[["4_motivations"]]
+```
+
+```{r}
+harbour_data_transportation <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q21 Data")
+dims[["5_transportation"]] <- dim(harbour_data_transportation)
+dims[["5_transportation"]]
+```
+
+```{r}
+harbour_data_drugsinjected <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q22b Data")
+dims[["6_drugsinjected"]] <- dim(harbour_data_drugsinjected)
+dims[["6_drugsinjected"]]
+```
+
+```{r}
+harbour_data_inhaled7days <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q29 Data")
+dims[["7_inhaled7days"]] <- dim(harbour_data_inhaled7days)
+dims[["7_inhaled7days"]]
+```
+
+```{r}
+harbour_data_druglifetime <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q35 Data")
+dims[["8_druglifetime"]] <- dim(harbour_data_druglifetime)
+dims[["8_druglifetime"]]
+```
+
+```{r}
+harbour_data_harbourhelped <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q54 Data")
+dims[["9_harbourhelped"]] <- dim(harbour_data_harbourhelped)
+dims[["9_harbourhelped"]]
+```
+
+```{r}
+harbour_data_improve <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Q56 Data")
+dims[["10_improve"]] <- dim(harbour_data_improve)
+dims[["10_improve"]]
+```
+
+The following test will make sure that all sheets have the same number of rows (212 participants), and will give an error message if not. It uses a loop to rename the sheets and label them. I did not write this myself, but I understand it! I will get there, I am determined! The first section is creating a list of each sheet from all the ten different data files and giving them a basic name. The second chunk is a loop that runs through all ten sheets and pulls every name (except for Participant, because it's merging on that). The "unlist" makes the all into one bigger vector with all the names. Then, the unique pulls out duplicated names and dup_names is telling R to list any it finds. The third chunk creates a function that targets only duplicated names and gives them the label assigned in the sheets chunk. So, if there are two "Other" columns, this makes them into "Other_Race" and "Other_Gender." The last chunk is then applying this function to each sheet/dataset. 
+```{r}
+sheets <- list(
+  basic = harbour_data_basic, gender = harbour_data_gender,
+  race = harbour_data_race, motivations = harbour_data_motivations,
+  transportation = harbour_data_transportation,
+  drugsinjected = harbour_data_drugsinjected,
+  inhaled7days = harbour_data_inhaled7days,
+  druglifetime = harbour_data_druglifetime,
+  harbourhelped = harbour_data_harbourhelped,
+  improve = harbour_data_improve
+)
+
+all_names <- unlist(lapply(sheets, function(d) setdiff(names(d), "PARTICIPANT")))
+dup_names <- unique(all_names[duplicated(all_names)])
+dup_names
+
+make_unique <- function(d, label) {
+  hit <- names(d) %in% dup_names
+  names(d)[hit] <- paste0(names(d)[hit], "_", label)
+  d
+}
+
+harbour_data_basic          <- make_unique(harbour_data_basic, "basic")
+harbour_data_gender         <- make_unique(harbour_data_gender, "gender")
+harbour_data_race           <- make_unique(harbour_data_race, "race")
+harbour_data_motivations    <- make_unique(harbour_data_motivations, "motivations")
+harbour_data_transportation <- make_unique(harbour_data_transportation, "transportation")
+harbour_data_drugsinjected  <- make_unique(harbour_data_drugsinjected, "drugsinjected")
+harbour_data_inhaled7days   <- make_unique(harbour_data_inhaled7days, "inhaled7days")
+harbour_data_druglifetime   <- make_unique(harbour_data_druglifetime, "druglifetime")
+harbour_data_harbourhelped  <- make_unique(harbour_data_harbourhelped, "harbourhelped")
+harbour_data_improve        <- make_unique(harbour_data_improve, "improve")
+```
+
+Again, this is another test to ensure that each column has the same number of rows and stops and errors if not. It's using a loop to go through all datasets, rather than doing this individually for each of the 10. It returns the row and column count for each one. Then, the second chunk removes duplicates (assuming each sheet has 212 rows as planned), and then the ! = 1 asks if something is not equal to 1. Basically, if the row count is all 212, there will be one unique row value, thus a length of 1. If they are unequal, the value will not equal 1 and will trigger the rror in the curly bracket that stops the script and lists the count of each sheet. 
+```{r}
+dims <- lapply(sheets, dim)
+row_counts <- sapply(dims, function(d) d[1])
+
+if (length(unique(row_counts)) != 1) {
+  stop("Row counts differ: ",
+       paste(names(row_counts), row_counts, sep = "=", collapse = ", "))
+}
+```
+
+Now, I'm calling up the basic file to check that it read in correctly. 
+```{r}
+head(harbour_data_basic)
+```
+
+Now, I'm checking the gender file too. 
+```{r}
+harbour_data_gender
+```
+
+These look good. I can now combine them using the merge function. I call it temp1 as I will end up with multiple "temp" files before I merge them all together. I'm going to use the same dim test process to make sure they all have the same 212 participants (rows) included. I am not using a loop here because I want to make sure I'm understanding each step clearly. 
+```{r}
+harbourtemp1 = merge(harbour_data_basic, harbour_data_gender, by = "PARTICIPANT", all = TRUE)
+dims[["temp1"]] <- dim(harbourtemp1)
+dims[["temp1"]]
+```
+
+Let's see how it looks. 
+```{r}
+head(harbourtemp1)
+```
+
+This looks correct. So, now I'm going to merge the rest, checking the count each time. 
+```{r}
+harbourtemp2 = merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
+dims[["temp2"]] <- dim(harbourtemp2)
+dims[["temp2"]]
+```
+
+Let's check whether the all have the same number of rows. 
+```{r}
+nrow(harbour_data_basic)
+nrow(harbour_data_gender)
+nrow(harbourtemp1)
+```
+
+When I was reading this in the first time (this is future me), I had an error here with different row counts. So, I deduced that it must be a merging error. So, I ran this next chunk to see what columns it was merging on. 
+```{r}
+intersect(names(harbourtemp1), names(harbour_data_race))
+```
+
+It read "Other" and "Participant" so I knew that it was merging on Other too, which is why I'm getting weird row selections. This next chunk specifies to R that I want it only to merge on PARTICIPANT, and then checks the number of rows. 
+```{r}
+harbourtemp2 <- merge(harbourtemp1, harbour_data_race, by = "PARTICIPANT", all = TRUE)
+dims[["temp2"]] <- dim(harbourtemp2)
+dims[["temp2"]]
+nrow(harbourtemp2)
+```
+
+Ok, now this is the right number of rows. Let's call it up once more to make sure it looks right. 
+```{r}
+head(harbourtemp2)
+```
+
+Okay, now carrying on. I'm going to merge each one with a dim check. 
+```{r}
+harbourtemp3 = merge(harbourtemp2, harbour_data_transportation, by = "PARTICIPANT", all = TRUE)
+dims[["temp3"]] <- dim(harbourtemp3)
+dims[["temp3"]] 
+nrow(harbourtemp3)
+ncol(harbourtemp3)
+```
+ 
+```{r}
+harbourtemp4 <- merge(harbourtemp3, harbour_data_motivations, by = "PARTICIPANT", all = TRUE)
+dims[["temp4"]] <- dim(harbourtemp4)
+dims[["temp4"]]
+nrow(harbourtemp4)
+ncol(harbourtemp4)
+```
+
+Carrying on...
+```{r}
+harbourtemp5 = merge(harbourtemp4, harbour_data_drugsinjected, by = "PARTICIPANT", all = TRUE)
+dims[["temp5"]] <- dim(harbourtemp5)
+dims[["temp5"]]
+nrow(harbourtemp5)
+ncol(harbourtemp5)
+```
+
+```{r}
+harbourtemp6 = merge(harbourtemp5, harbour_data_inhaled7days, by = "PARTICIPANT", all = TRUE)
+dims[["temp6"]] <- dim(harbourtemp6)
+dims[["temp6"]]
+nrow(harbourtemp6)
+ncol(harbourtemp6)
+```
+
+```{r}
+harbourtemp7 = merge(harbourtemp6, harbour_data_druglifetime, by = "PARTICIPANT", all = TRUE)
+dims[["temp7"]] <- dim(harbourtemp7)
+dims[["temp7"]]
+nrow(harbourtemp7)
+ncol(harbourtemp7)
+```
+
+```{r}
+harbourtemp8 = merge(harbourtemp7, harbour_data_harbourhelped, by = "PARTICIPANT", all = TRUE)
+dims[["temp8"]] <- dim(harbourtemp8)
+dims[["temp8"]]
+nrow(harbourtemp8)
+ncol(harbourtemp8)
+```
+
+```{r}
+harbourtemp9 = merge(harbourtemp8, harbour_data_improve, by = "PARTICIPANT", all = TRUE)
+dims[["temp9"]] <- dim(harbourtemp9)
+dims[["temp9"]]
+nrow(harbourtemp9)
+ncol(harbourtemp9)
+```
+
+This, as above, is the same loop function to check whether the row counts are the same. 
+```{r}
+row_counts <- sapply(dims, function(d) d[1])
+row_counts  
+
+stopifnot("Row counts don't match across sheets" = length(unique(row_counts)) == 1)
+```
+
+Now, let's rename it to not be the random temp title. 
+```{r}
+harbourdatafinalmerged <- harbourtemp9
+```
+
+Now, I'm checking the final data file. 
+```{r}
+head(harbourdatafinalmerged)
+```
+
+It needs to be made into a data frame. 
+```{r}
+my_df <- as.data.frame(harbourdatafinalmerged)
+```
+
+Let's check it out. 
+```{r}
+head(harbourdatafinalmerged)
+```
+
+This was merging the wrong way, not aligning participant columns. So, this next chunk is written to fix that. The reduce command is telling R to join using the PARTICIPANT column. 
+```{r}
+file_list <- list(harbour_data_basic, harbour_data_gender, harbour_data_race, harbour_data_transportation, harbour_data_motivations, harbour_data_drugsinjected, harbour_data_inhaled7days, harbour_data_druglifetime, harbour_data_harbourhelped, harbour_data_improve)
+
+merged_data <- file_list |>
+  reduce(full_join, by = "PARTICIPANT")
+```
+
+```{r}
+merged_data
+```
+
+```{r}
+harbourdatafinalmerged1 <- merged_data
+harbourdatafinal <- harbourdatafinalmerged1
+rm(harbourdatafinalmerged1)
+
+harbourdatafinal
+```
+
+Here is the first of a few chunks of renaming.  
+```{r}
+harbourdatafinal |> rename(
+  Have_injected_CrystalMeth = "Crystal Meth_drugsinjected",
+  Have_injected_CrackCocaine = "Crack Cocaine_drugsinjected",
+  Have_injected_Benzos = "Benzodiazepines_drugsinjected",
+  Have_injected_Heroin = "Heroin_drugsinjected",
+  Have_injected_Methadone = "Methadone_drugsinjected",
+  Have_injected_Oxy = "Oxy._drugsinjected",
+  Have_injected_Amphetamines = "Amphetamines_drugsinjected",
+
+  Smoked_7days_FentCarfent = "Fent./Carfent._inhaled7days",
+  Smoked_7days_CrystalMeth = "Crystal Meth_inhaled7days",
+  Smoked_7days_CrackCocaine = "Crack Cocaine_inhaled7days",
+  Smoked_7days_Benzos = "Benzodiazepines_inhaled7days",
+  Smoked_7days_DilaudidHydromorph = "Dilaud. / Hydromorp._inhaled7days",
+  Smoked_7days_Heroin = "Heroin_inhaled7days",
+  Smoked_7days_Methadone = "Methadone_inhaled7days",
+  Smoked_7days_Oxy = "Oxy._inhaled7days",
+  Smoked_7days_PrescriptionOpioids = "Prescription Opioids_inhaled7days",
+  Smoked_7days_Amphetamines = "Amphetamines_inhaled7days",
+
+  Lifetime_FentCarfent = "Fent./Carfent._druglifetime",
+  Lifetime_CrystalMeth = "Crystal Meth_druglifetime",
+  Lifetime_Benzos = "Benzodiazepines_druglifetime",
+  Lifetime_DialaudidHydromorph = "Dilaud. / Hydromorp._druglifetime",
+  Lifetime_Heroin = "Heroin_druglifetime",
+  Lifetime_Methadone = "Methadone_druglifetime",
+  Lifetime_Oxy = "Oxy._druglifetime",
+  Lifetime_PrescriptionOpioids = "Prescription Opioids_druglifetime",
+  Lifetime_Amphetamines = "Amphetamines_druglifetime",
+  HarbourImprove_ConnectTreatmentServices = "Help connecting with treatment or recovery services"
+) |> 
+ select(-any_of(c(
+    "BLANK...5", "BLANK...18", "...20", "...9", 
+    "Other.y.y.y", "Other.x.x.x.x", "Other.x.x.x", 
+    "Oxy..y", "Oxy..x", "...12", "Prefer not to answer.y", "Other.y.y.y.y"
+  )))
+```
+
+This is the last dim check. 
+```{r}
+dims[["final"]] <- dim(harbourdatafinal)
+dims[["final"]]
+```
+
+This is another loop that prints the row counts for each of the sheets and stops if they don't match. 
+```{r}
+#| output: true
+row_counts <- sapply(dims, function(d) d[1])
+row_counts  
+
+stopifnot("Row counts don't match across sheets" = length(unique(row_counts)) == 1)
+```
+
+This big chunk renames the columns to all be more uniform. 
+```{r}
+new_names <- c(
+  # Demographics / housing (1-19)
+  "Participant", "Year_Of_Birth", "Sex", "Education", "Blank_5",
+  "Unhoused", "Sleep_Last_Night", "Outside", "Housed_Vic", "Num_Housed_Vic",
+  "Denied", "Low_Barrier", "Use_SC", "Freq_Harbour", "Time_Of_Day_Harbour",
+  "Time_At_Harbour", "Visit_Harbour_With", "Blank_18", "Time_To_Harbour",
+
+  # Use history / overdose / treatment (20-39)
+  "Injected", "Months_Injected", "Inhale", "Inhaled_Last_Month", "Inhaled_Today",
+  "Num_Inhale", "Months_Inhaled", "Smoke_Same", "Harbour_Changed",
+  "Supplies_Harbour", "Duration_Drugs", "Overdosed", "Num_OD_Exp", "Narcan",
+  "Num_Narcan", "Treatment", "Treatment_Unable", "Harbour_Helped", "Improve",
+  "Drug_Check",
+
+  # Gender (40-46)
+  "Trans_Woman", "Trans_Man", "Two_Spirit", "Non_Binary", "Cis_Woman",
+  "Cis_Man", "Other_Gender",
+
+  # Race / ethnicity (47-53)
+  "Race_Black", "Race_Asian_PI", "Race_White", "Race_Hispanic_Latinx",
+  "Race_Indigenous", "Race_Other", "Race_Prefer_Not",
+
+  # Transportation (54-61)
+  "Transport_Walking", "Transport_Transit", "Transport_Bicycle",
+  "Transport_EScooter_EBike", "Transport_Vehicle", "Transport_Rideshare_Taxi",
+  "Transport_Other", "Blank_9",
+
+  # Motivations for visiting (62-80)
+  "Motiv_Inject", "Motiv_Smoke_Inhale", "Motiv_Get_Substances",
+  "Motiv_Drug_Check", "Motiv_See_Friends", "Motiv_See_Staff",
+  "Motiv_OD_Prevention", "Motiv_Clean_Supplies", "Motiv_Physical_Safety",
+  "Motiv_Privacy", "Motiv_Warmth_Shelter", "Motiv_Charge_Phone",
+  "Motiv_Bathroom", "Motiv_Counselling", "Motiv_Access_Dealer",
+  "Motiv_Street_Nurse", "Motiv_Have_Access", "Motiv_Other", "Blank_20",
+
+  # Drugs injected (81-91)
+  "Inj_Fentanyl", "Inj_Crystal_Meth", "Inj_Crack", "Inj_Benzos",
+  "Inj_Hydromorphone", "Inj_Heroin", "Inj_Methadone", "Inj_Oxy",
+  "Inj_Prescription_Opioids", "Inj_Amphetamines", "Blank_12",
+
+  # Drugs inhaled, past 7 days (92-104)
+  "Inh_Fentanyl", "Inh_Crystal_Meth", "Inh_Crack", "Inh_Benzos",
+  "Inh_Hydromorphone", "Inh_Heroin", "Inh_Methadone", "Inh_Oxy",
+  "Inh_Prescription_Opioids", "Inh_Amphetamines", "Inh_Mixed", "Inh_Other",
+  "Inh_Prefer_Not",
+
+  # Drugs used, lifetime (105-118)
+  "Life_Fentanyl", "Life_Crystal_Meth", "Life_Cocaine", "Life_Benzos",
+  "Life_Hydromorphone", "Life_Heroin", "Life_Methadone", "Life_Oxy",
+  "Life_Prescription_Opioids", "Life_Amphetamines", "Life_Cannabis",
+  "Life_Sleeping_Pills", "Life_Non_Bev_Alcohol", "Life_Other",
+
+  # How the harbour helped (119-125)
+  "Helped_Overdose_Less", "Helped_Avoid_Unsafe_Smoking",
+  "Helped_Replace_Injecting", "Helped_Access_Healthcare", "Helped_Safer_Use",
+  "Helped_No_Change", "Helped_Other",
+
+  # What would improve it (126-134)
+  "Improve_Staff", "Improve_Bathrooms", "Improve_Drug_Testing",
+  "Improve_Smoking_Facilities", "Improve_Hours", "Improve_Privacy",
+  "Improve_Checkin", "Improve_Treatment_Help", "Improve_Other"
+)
+
+```
+
+The following chunk tests that no columns got dropped and checks for duplicated names. I'm then renaming it and then dropping the blank columns. 
+```{r}
+stopifnot(
+  length(new_names) == ncol(harbourdatafinal),
+  anyDuplicated(new_names) == 0
+)
+                 
+names(harbourdatafinal) <- new_names
+
+harbourdatafinal <- harbourdatafinal |>
+  select(-starts_with("Blank_"))
+```
+
+Here is the dataframe at this stage. 
+```{r}
+harbourdatafinal
+```
+
+# Now, Let's do some exploratory data analyses (EDA) on my Harbour data. 
+EDA is the process of exploring a dataset, coming to understand its features and structure, identify errors and outliers, understand the distribution and properties of variables and the relationships between them.
+
+## Setting up my Workspace 
+```{r}
+# install.packages("arrow")
+# install.packages("mice")
+# install.packages("modelsummary")
+# install.packages("naniar")
+```
+
+```{r}
+library(arrow)
+library(janitor)
+library(lubridate)
+library(mice)
+library(modelsummary)
+library(naniar)
+library(tidyverse)
+library(tinytable)
+library(dplyr)
+```
+## Beginning EDA 
+
+To get a quick sense of my data, I'll run the head() and tail() functions, then a random selection. 
+
+```{r}
+harbourdatafinal |> 
+  head()
+```
+```{r}
+harbourdatafinal |>
+  tail()
+```
+```{r}
+harbourdatafinal |> 
+  slice_sample (n = 6)
+```
+The first thing that is clear to me in doing this is the number of NR ("non-response") values my dataset has. The most important thing about doing this EDA will be for me to decide how to work around those missing values. I will return to this. 
+
+Now, summary() will give the key summary statistics of my dataset. 
+```{r}
+harbourdatafinal |>
+  summary()
+```
+### Removing Columns 
+
+The first thing I am going to do in order to make things easier for myself (I realize I had previously been over complicating this) is to remove a bunch of the columns. I have made these selections based on data that are not explicitly needed to answer my research question or acting as control variables. 
+
+```{r}
+harbourdatafinaltrimmed <- subset(
+  harbourdatafinal,
+  select = -c(
+    Num_Housed_Vic, Denied, Low_Barrier, Visit_Harbour_With,
+    Injected, Months_Injected, Inhale, Inhaled_Last_Month,
+    Inhaled_Today, Num_Inhale, Months_Inhaled, Smoke_Same,
+    Harbour_Changed, Duration_Drugs, Overdosed, Num_OD_Exp,
+    Narcan, Num_Narcan, Treatment, Treatment_Unable,
+    Harbour_Helped, Improve, Drug_Check, Inj_Fentanyl,
+    Inj_Crystal_Meth, Inj_Crack, Inj_Benzos, Inj_Hydromorphone,
+    Inj_Heroin, Inj_Methadone, Inj_Oxy, Inj_Prescription_Opioids,
+    Inj_Amphetamines, Inh_Fentanyl, Inh_Crystal_Meth, Inh_Crack,
+    Inh_Benzos, Inh_Hydromorphone, Inh_Heroin, Inh_Methadone,
+    Inh_Oxy, Inh_Prescription_Opioids, Inh_Amphetamines, Inh_Mixed,
+    Inh_Other, Inh_Prefer_Not, Life_Fentanyl, Life_Crystal_Meth,
+    Life_Cocaine, Life_Benzos, Life_Hydromorphone, Life_Heroin,
+    Life_Methadone, Life_Oxy, Life_Prescription_Opioids, Life_Amphetamines,
+    Life_Cannabis, Life_Sleeping_Pills, Life_Non_Bev_Alcohol, Life_Other,
+    Improve_Staff, Improve_Bathrooms, Improve_Drug_Testing, Improve_Smoking_Facilities,
+    Improve_Hours, Improve_Privacy, Improve_Checkin, Improve_Treatment_Help,
+    Improve_Other
+  )
+)
+```
+
+Let's see how that looks. 
+```{r}
+harbourdatafinaltrimmed
+```
+
+### Creating Vectors 
+
+Before I figure out what to do about the NAs, I am going to make the categorical variables and ordinal variables into factors.
+First is slept last night. 
+```{r}
+harbourdatafinaltrimmed$Sleep_Last_Night <- factor(
+  harbourdatafinaltrimmed$Sleep_Last_Night,
+  levels = c("SH", "ST", "T", "FH", "RH", "SO", "AH"),
+  labels = c(
+    "Shelter",
+    "Street",
+    "Tent",
+    "Friend's Home",
+    "Recovery House",
+    "Sobering House",
+    "Apartment/House"
+  )
+)
+
+```
+
+```{r}
+table(harbourdatafinaltrimmed$Sleep_Last_Night, useNA = "ifany")
+is.ordered(harbourdatafinaltrimmed$Sleep_Last_Night)
+```
+
+Next is frequency of visits to The Harbour. 
+```{r}
+harbourdatafinaltrimmed$Freq_Harbour <- factor(
+  harbourdatafinaltrimmed$Freq_Harbour,
+  levels = c("FRS", "OC", "OPW", "FEW", "OPD", "M"),
+  ordered = TRUE
+)
+```
+
+```{r}
+table(harbourdatafinaltrimmed$Freq_Harbour, useNA = "ifany")
+is.ordered(harbourdatafinaltrimmed$Freq_Harbour)
+```
+Next, time to Harbour is a little more difficult. 
+```{r}
+table(harbourdatafinaltrimmed$Time_To_Harbour, useNA = "ifany")
+```
+
+Here is a big code chunk that AI wrote for me. Let's see what it does....
+```{r}
+harbourdatafinaltrimmedtest <- harbourdatafinaltrimmed %>%
+  mutate(
+    # Step 1: Trim any hidden leading/trailing spaces
+    clean_raw = trimws(as.character(Time_To_Harbour)),
+    
+    # Step 2: Group into clean categories
+    Time_Category = case_when(
+      # Group 1: 15 minutes or less (includes 0, ranges <= 15, and "Few")
+      clean_raw %in% c(
+        "0", "no time - live on same street (0)", "0 to 15",
+        "1", "1 to 10", "1 to 15", "2", "3", "5", "5 to 10",
+        "6", "6 to 8 min", "7", "8", "10", "10 to 15 min",
+        "13", "15", "15 or less", "Few"
+      ) ~ "15 mins or less",
+      
+      # Group 2: 16 to 30 minutes (includes ranges up to 30 and midpoints around 18-30)
+      clean_raw %in% c(
+        "1 to 25 min", "18", "20", "21", "25", "30", "5 to 30"
+      ) ~ "16 to 30 mins",
+      
+      # Group 3: 31 to 60 minutes (includes ranges spanning up to 60 and "2 min or 1 hr")
+      clean_raw %in% c(
+        "10 to 60", "15 to 60", "30 to 60", "40", "45", 
+        "5 to 60", "60", "2 min or 1 hr"
+      ) ~ "31 to 60 mins",
+      
+      # Group 4: Over 60 minutes (includes >60 mins, "1 to 180", and "Hours")
+      clean_raw %in% c(
+        "65", "69", "120", "135", "1 to 180", 
+        "240 or 540 (see note)", "Hours"
+      ) ~ "Over 60 mins",
+      
+      # Group 5: Unspecified / Vague valid responses (15 rows total)
+      # Note: Set to NA_character_ instead if you want to exclude these from analysis
+      clean_raw %in% c("Minutes", "Minuites", "minuites", "Depends") ~ "~5 mins",
+      
+      # Group 6: Non-response and missing values (28 rows total)
+      clean_raw %in% c("NR", "NR (see note)") | is.na(clean_raw) ~ NA_character_,
+      
+      # Safety catch: flags anything unexpected
+      TRUE ~ "CHECK_ME"
+    ),
+    
+    # Step 3: Convert to an ordered categorical factor
+    Time_Category = factor(
+      Time_Category,
+      levels = c(
+        "15 mins or less",
+        "16 to 30 mins",
+        "31 to 60 mins",
+        "Over 60 mins",
+        "~5 mins"
+      )
+    )
+  ) %>%
+  select(-clean_raw) # Remove temporary helper column
+
+# Verify the final counts
+table(harbourdatafinaltrimmedtest$Time_Category, useNA = "ifany")
+
+```
+
+I definitely could not write that code on my own but I can somewhat understand it, at least. I decided to change the minutes type to "~5 mins" because I didn't want it to be lost or "unspecified" as AI suggested. 
+
+Next, using supplies at The Harbour will be the same method as the frequency one. Lets see if I can write it myself. 
+
+The harbourdatafinaltrimmedtest (I will change this name later) accidentally ended up overriding the df. This should fix it. I had to rerun the chunk above where I named it and delete the one that broke it and then it worked. 
+```{r}
+harbourdatafinaltrimmedtest$Supplies_Harbour <- factor(
+  harbourdatafinaltrimmedtest$Supplies_Harbour,
+  levels = c("N", "S", "A"),
+  labels = c("Never", "Sometimes", "Always"),
+  ordered = TRUE
+)
+```
+
+```{r}
+table(harbourdatafinaltrimmedtest$Supplies_Harbour, useNA = "ifany")
+
+is.ordered(harbourdatafinaltrimmedtest$Supplies_Harbour)
+```
+That is all the ordered variables. 
+
+### Cleaning Environment 
+
+Now, I am not totally sure if there is a better way to be working with the gender, race, transportation and motivation variables other than a column per response option. For now, I'm going to move on to dealing with the NAs. Before I do this, however, I am going to rename the dataset so its name is not so long and rerun the first few EDA steps. 
+
+```{r}
+harbourdatafinalized <- harbourdatafinaltrimmedtest
+```
+
+Now, I'm removing the old version. 
+
+```{r}
+rm(harbourdatafinaltrimmedtest)
+```
+
+I have a lot of different versions of the dataset in my environment. Let's go through them. 
+
+```{r}
+harbourdatafinalmerged |>
+  head()
+```
+
+This one is my first merge of all my individual data sheets from the excel file. I will keep this one, as it is the second step up from my true raw data. 
+
+```{r}
+harbourdatafinaltrimmed |>
+  head()
+```
+
+This is my dataset before I made the three variables into factors. I'll rename this as such, so my envrionment isn't as confusing with so many versions. Let's rename the one above, too. 
+
+```{r}
+harbourdatafinalog <- harbourdatafinalmerged
+
+harbourdatanovector <- harbourdatafinaltrimmed
+
+rm(harbourdatafinalmerged)
+rm(harbourdatafinaltrimmed)
+
+```
+
+```{r}
+harbourdataog <- harbourdatafinalog
+
+rm(harbourdatafinalog)
+```
+
+```{r}
+harbourdatapreclean <- harbourdatafinal
+
+rm(harbourdatafinal)
+
+```
+
+Ok, now they're renamed in a way I like. There is "harbourdataog," the original merge, "harbourdatapreclean," the version before trimming and cleaning, "harbourdatanovector," the cleaned but not yet vectored version, and "harbourdatafinalized" is my current working version. I will have to rename and remove again once I have dealt with the NA values, but I will do that once necessary. 
+
+## Back to EDA 
+
+```{r}
+harbourdatafinalized |>
+  head()
+```
+
+```{r}
+harbourdatafinalized |>
+  tail()
+```
+
+I see now that I also can make the Education column into a factor. I'll do that now. I will also change all the "NR"s in the data to "NA," so R reads them as missing values. 
+
+```{r}
+harbourdatafinalized$Education <- factor(
+  harbourdatafinalized$Education,
+  levels = c("E", "HS", "UC"),
+  labels = c("Elementary", "HighSchool", "UniCollege"),
+  ordered = TRUE
+)
+```
+
+```{r}
+table(harbourdatafinalized$Education, useNA = "ifany")
+
+is.ordered(harbourdatafinalized$Education)
+```
+```{r}
+harbourdatafinalized[harbourdatafinalized == "NR"] <- NA
+```
+
+Now, lets explore what the df looks like now. 
+
+```{r}
+harbourdatafinalized |>
+  slice_sample (n = 6)
+```
+
+```{r}
+harbourdatafinalized |>
+  glimpse()
+```
+I can see here that my recoding the NRs into NAs was successful. There are a lot of them! 
+```{r}
+harbourdatafinalized |>
+  summary()
+```
+
+These show me that almost all my variables need to be changed from character to numeric. The first section of the following chunk handles categorical variables and the second numeric. 
+
+```{r}
+harbourdatafinalized <- harbourdatafinalized |>
+  select(-Time_To_Harbour) |>
+  mutate(
+    Sex = factor(Sex),
+    Time_Of_Day_Harbour = factor(Time_Of_Day_Harbour),
+
+    across(
+      c(Year_Of_Birth,
+        Unhoused, Outside, Housed_Vic, Use_SC,
+        Trans_Woman:Other_Gender,
+        starts_with("Race_"),
+        starts_with("Transport_"),
+        starts_with("Motiv_"),
+        starts_with("Helped_")),
+      as.numeric
+    )
+  )
+```
+This introduced a lot of new NAs. Let's take a look. 
+
+```{r}
+harbourdatafinalized |>
+  glimpse()
+```
+
+```{r}
+harbourdatafinalized |>
+  summary()
+```
+
+Yay! There may be more NAs, but this summary makes a lot more sense now. 
+
+I have two time at Harbour columns from my cleaning before, lets fix that. 
+
+```{r}
+harbourdatafinalized <- harbourdatafinalized |>
+  select(-Time_At_Harbour) |>
+  rename(Time_Spent_Harbour = Time_Category)
+```
+
+```{r}
+unique(harbourdatafinalized$Year_Of_Birth)
+```
+
+These are being considered unique because they're the only respondents who were born in that year, so it is not to worry. 
+
+```{r}
+unique(harbourdatafinalized$Sex)
+```
+
+These ones aren't very interesting so I'm going to run one more unique test on a more interesting column. 
+
+```{r}
+unique(harbourdatafinalized$Time_Spent_Harbour)
+```
+
+These all show that each defined value in these categories is used. 
+
+Now, let's do some tables. 
+
+```{r}
+table(harbourdatafinalized$Sex)
+```
+
+```{r}
+table(harbourdatafinalized$Education)
+```
+
+```{r}
+table(harbourdatafinalized$Sleep_Last_Night)
+```
+
+```{r}
+table(harbourdatafinalized$Freq_Harbour)
+```
+
+```{r}
+table(harbourdatafinalized$Time_Of_Day_Harbour)
+```
+
+```{r}
+table(harbourdatafinalized$Time_Spent_Harbour)
+```
+
+This will show the duplicates in the dataframe. 
+
+```{r}
+get_dupes(harbourdatafinalized)
+```
+
+There are no dupes! Yay. Now, lets look at the distribution of the data. I'm going to run summary one more time to see what the means and medians are looking like. 
+
+```{r}
+harbourdatafinalized |>
+  summary()
+```
+
+
+Now, it is offically time to face reality (my NA values). 
+
+
+
