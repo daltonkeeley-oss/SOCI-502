@@ -24,6 +24,10 @@ dims <- list()
 ```
 
 ```{r}
+setwd("Users/KeeleyDalton/SOCI-502/SOCI-502")
+```
+
+```{r}
 harbour_data_basic <- read_excel("SUS_Harbour_DATA_TEMPLATE.xlsx", sheet = "Data (basic)")
 dims[["1_basic"]] <- dim(harbour_data_basic)
 dims[["1_basic"]] 
@@ -499,7 +503,7 @@ harbourdatafinaltrimmed <- subset(
     Life_Cannabis, Life_Sleeping_Pills, Life_Non_Bev_Alcohol, Life_Other,
     Improve_Staff, Improve_Bathrooms, Improve_Drug_Testing, Improve_Smoking_Facilities,
     Improve_Hours, Improve_Privacy, Improve_Checkin, Improve_Treatment_Help,
-    Improve_Other
+    Improve_Other, Unhoused, Outside, Housed_Vic
   )
 )
 ```
@@ -553,14 +557,13 @@ Next, time to Harbour is a little more difficult.
 table(harbourdatafinaltrimmed$Time_To_Harbour, useNA = "ifany")
 ```
 
-Here is a big code chunk that AI wrote for me. Let's see what it does....
+Here is a big code chunk that AI wrote for me. Let's see what it does.... It starts by cleaning the raw data of time to Harbour, then groups them into six groups, including NA. Then, it creates the factor, removes the clean_raw column and brings up a table with the count for each new category.  
 ```{r}
 harbourdatafinaltrimmedtest <- harbourdatafinaltrimmed %>%
   mutate(
-    # Step 1: Trim any hidden leading/trailing spaces
+  
     clean_raw = trimws(as.character(Time_To_Harbour)),
     
-    # Step 2: Group into clean categories
     Time_Category = case_when(
       # Group 1: 15 minutes or less (includes 0, ranges <= 15, and "Few")
       clean_raw %in% c(
@@ -588,17 +591,14 @@ harbourdatafinaltrimmedtest <- harbourdatafinaltrimmed %>%
       ) ~ "Over 60 mins",
       
       # Group 5: Unspecified / Vague valid responses (15 rows total)
-      # Note: Set to NA_character_ instead if you want to exclude these from analysis
       clean_raw %in% c("Minutes", "Minuites", "minuites", "Depends") ~ "~5 mins",
       
       # Group 6: Non-response and missing values (28 rows total)
       clean_raw %in% c("NR", "NR (see note)") | is.na(clean_raw) ~ NA_character_,
       
-      # Safety catch: flags anything unexpected
       TRUE ~ "CHECK_ME"
     ),
     
-    # Step 3: Convert to an ordered categorical factor
     Time_Category = factor(
       Time_Category,
       levels = c(
@@ -610,9 +610,8 @@ harbourdatafinaltrimmedtest <- harbourdatafinaltrimmed %>%
       )
     )
   ) %>%
-  select(-clean_raw) # Remove temporary helper column
+  select(-clean_raw) 
 
-# Verify the final counts
 table(harbourdatafinaltrimmedtest$Time_Category, useNA = "ifany")
 
 ```
@@ -843,7 +842,16 @@ harbourdatafinalized |>
 ```
 
 
-Now, it is offically time to face reality (my NA values). 
+Now, when I look at my summary, I can't help but be bothered by all the columns for race, transport, etc. But, I can't use pivot_longer because they're multiselect variables. So, now I will finally deal with the NAs. 
+
+```{r}
+
+```
+
+
+
+
+
 
 
 
