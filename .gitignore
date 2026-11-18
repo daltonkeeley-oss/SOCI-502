@@ -7,3 +7,4 @@ SOCI-502.Rproj
 
 /.quarto/
 **/*.quarto_ipynb
+.quarto/
